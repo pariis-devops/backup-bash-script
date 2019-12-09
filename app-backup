@@ -1,0 +1,55 @@
+SERVER="mail.mailserver.com:2525"
+FROM="par.shams90@mailserver.com"
+USERN="par.shams90@mailserver.com"
+PASSW="your password"
+TO="customer@mailserver.com"
+CHARSET="utf-8"
+name='cln'
+app_path='/var/www/'
+
+
+logfile='/home/webapp/backup/backup.log'
+output='/home/webapp/backup/app-backup'
+templog='/tmp/backup.log'
+timestamp=`date "+%Y-%m-%d %H:%M:%S"`
+
+if [ -f /tmp/backup.log ];then
+        rm -rf /tmp/backup.log
+fi
+echo "DP Automatic Backup Script Report :" >> $templog
+
+tar -zvcf $output/$name-$(date "+%Y-%m-%d_%H").tar.gz $app_path >> $logfile 2>&1
+ scp $output/$name-$(date "+%Y-%m-%d_%H").tar.gz crypto@ServerIP:/home/cln/app-backup
+
+if [ $? -eq 0 ];then
+        echo $timestamp "Done --- APP backup operation was successful." >> $logfile
+        echo $timestamp "Done --- APP backup operation was successful." >> $templog
+else
+        echo $timestamp "Error --- APP backup operation was not successful." >> $logfile
+        echo $timestamp "Error --- APP backup operation was not successful." >> $templog
+fi
+
+
+
+
+
+echo '' >> $templog
+
+
+echo "Storage Used Space (Percentage) :" $(df -h | grep Disk--2-vm--102--disk--0 | awk '{print $5}') >> $logfile
+echo "Storage Used Space (Percentage) :" $(df -h | grep Disk--2-vm--102--disk--0 | awk '{print $5}') >> $templog
+
+ssh crypto@88.99.43.62 "find /home/crypto/app-backup -type f -mtime +4 -exec rm -rf {} \;"
+
+if [ $? -eq 0 ];then
+        echo $timestamp "Done --- Remote Backup cleared 4 days ago." >> $logfile
+        echo $timestamp "Done --- Remote Backup cleared 4 days ago" >> $templog
+else
+        echo $timestamp "Done --- Remote Backup did not clear 4 days ago." >> $logfile
+        echo $timestamp "Done --- Remote Backup did not clear 4 days ago" >> $templog
+fi
+
+find /home/webapp/backup/app-backup/ -type f -mtime +7 -exec rm -rf {} \;
+
+
+sendemail -f $FROM -t $TO -cc $CC1 -cc $CC2 -u "CryptoLand APP Backup Report" -s $SERVER -o message-charset=$CHARSET message-file=$templog  -xu $USERN -xp $PASSW >> $logfile 2>&1
